@@ -10,7 +10,7 @@ COPY . $PLUGIN_PATH
 ENV JMETER_VERSION 5.2.1
 ENV JMETER_NAME apache-jmeter-$JMETER_VERSION
 ENV JMETER_BIN_URL http://ftp.halifax.rwth-aachen.de/apache/jmeter/binaries/$JMETER_NAME.zip
-ENV JMETER_TMP_DL_PATH /tmp/jmeter.tgz
+ENV JMETER_TMP_DL_PATH /tmp/jmeter.zip
 
 RUN apk add openjdk11-jre-headless
 

@@ -1,4 +1,3 @@
-import distutils.util
 import requests
 import uuid
 
@@ -9,9 +8,14 @@ from flask_api import status
 name = 'HTTP'
 prefix = 'http'
 storage_enabled = False
-global storage_path
 
 plugin = Blueprint(name, __name__)
+
+
+def register(app, plugin_storage_path=None):
+    app.register_blueprint(plugin, url_prefix=f'/{prefix}')
+    app.logger.info(f'{name} plugin registered.')
+
 
 persistence = {
     "configuration": {},
@@ -19,16 +23,9 @@ persistence = {
 }
 
 
-def register(app, plugin_storage_path=None):
-    app.register_blueprint(plugin, url_prefix=f'/{prefix}')
-    app.logger.info(f'{name} plugin registered.')
-    global storage_path
-    storage_path= plugin_storage_path
-
-
 @plugin.route('/')
 def index():
-    return "Http!"
+    return f'This is the Radon CTT Agent HTTP Plugin.', status.HTTP_200_OK
 
 
 @plugin.route('/configuration/', methods=['POST'])

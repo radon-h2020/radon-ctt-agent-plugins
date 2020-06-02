@@ -1,0 +1,42 @@
+language: minimal
+
+services:
+  - docker
+
+env:
+  global:
+    - DOCKER_ORG=radonconsortium
+    - DOCKER_REPO=radon-ctt-agent
+    - DOCKER_ORG_REPO="${DOCKER_ORG}/${DOCKER_REPO}"
+    - REPO_DIR="radon-h2020_radon-ctt-agent-plugins"
+    - REPO_URL="https://github.com/radon-h2020/radon-ctt-agent-plugins.git"
+  
+script:
+  # Clone parent repository
+  - git clone "${REPO_URL}" "${REPO_DIR}"
+  #
+  # Build CTT agent jmeter container
+  - docker build -t "${DOCKER_ORG_REPO}:jmeter" "${REPO_DIR}/jmeter/"
+  #
+  # Build CTT agent http container
+  - docker build -t "${DOCKER_ORG_REPO}:http" "${REPO_DIR}/http/"
+  #
+  # Build CTT agent ping container
+  # - docker build -t "${DOCKER_ORG_REPO}:ping" "${REPO_DIR}/ping/"
+  #
+  #
+  # DockerHub login
+  - docker login -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}"
+  #
+  #
+  # Push CTT agent JMeter container to DockerHub
+  - docker push "${DOCKER_ORG_REPO}:jmeter"
+  #
+  # Push CTT agent HTTP container to DockerHub
+  - docker push "${DOCKER_ORG_REPO}:http"
+  #
+  # Push CTT agent Ping container to DockerHub
+  # - docker push "${DOCKER_ORG_REPO}:ping"
+  #
+  # DockerHub logout
+  - docker logout

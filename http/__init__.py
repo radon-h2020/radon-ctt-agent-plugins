@@ -1,4 +1,6 @@
+import json
 import os
+import pickle
 import requests
 import shutil
 import tempfile
@@ -15,19 +17,20 @@ global storage_path
 
 plugin = Blueprint(name, __name__)
 
-result_zip_file_name = 'results.zip'
 
 def register(app, plugin_storage_path=None):
     app.register_blueprint(plugin, url_prefix=f'/{prefix}')
     app.logger.info(f'{name} plugin registered.')
     global storage_path
-    storage_path = storage_path
+    storage_path = plugin_storage_path
 
 
 persistence = {
     "configuration": {},
     "execution": {},
 }
+
+result_zip_file_name = 'results.zip'
 
 
 @plugin.route('/')
@@ -131,20 +134,18 @@ def execution():
             execution_instance['target_url'] = target_url
             execution_instance['status'] = str(response_status)
 
-            # Response and config as zip
-
             persistence['execution'][execution_uuid] = execution_instance
 
             execution_results_dir = os.path.join(storage_path, execution_uuid)
             os.makedirs(execution_results_dir)
 
             execution_json = os.path.join(execution_results_dir, 'execution.json')
-            received_response_json = os.path.join(execution_results_dir, 'response.json')
+            received_response = os.path.join(execution_results_dir, 'response.bin')
             with open(execution_json, 'w') as exec_json:
-                exec_json.writelines(execution_instance)
+                exec_json.write(json.dumps(execution_instance))
 
-            with open(received_response_json, 'w') as response_json:
-                response_json.writelines(jsonify(response))
+            with open(received_response, 'wb') as response_bin:
+                response_bin.write(pickle.dumps(response))
 
             with tempfile.NamedTemporaryFile() as tf:
                 tmp_zip_file = shutil.make_archive(tf.name, 'zip', execution_results_dir)
@@ -159,15 +160,15 @@ def execution():
         return "No configuration with that ID found.", jsonify(persistence), status.HTTP_404_NOT_FOUND
 
 
-# Get load test results
+# Get execution results
 @plugin.route('/execution/<string:exec_uuid>/', methods=['GET'])
 def execution_results(exec_uuid):
     try:
-        config_uuid = persistence.get('execution').get(exec_uuid).get('config').get('uuid')
+        execution_uuid = persistence.get('execution').get(exec_uuid).get('uuid')
     except AttributeError:
         return "No execution found with that ID.", status.HTTP_404_NOT_FOUND
 
-    results_zip_path = os.path.join(storage_path, config_uuid, exec_uuid, result_zip_file_name)
+    results_zip_path = os.path.join(storage_path, execution_uuid, result_zip_file_name)
     if os.path.isfile(results_zip_path):
         return send_file(results_zip_path)
     else:

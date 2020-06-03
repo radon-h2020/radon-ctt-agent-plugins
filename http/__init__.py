@@ -1,20 +1,27 @@
+import os
 import requests
+import shutil
+import tempfile
 import uuid
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, send_file
 from flask_api import status
 
 
 name = 'HTTP'
 prefix = 'http'
-storage_enabled = False
+storage_enabled = True
+global storage_path
 
 plugin = Blueprint(name, __name__)
 
+result_zip_file_name = 'results.zip'
 
 def register(app, plugin_storage_path=None):
     app.register_blueprint(plugin, url_prefix=f'/{prefix}')
     app.logger.info(f'{name} plugin registered.')
+    global storage_path
+    storage_path = storage_path
 
 
 persistence = {
@@ -63,14 +70,6 @@ def configuration_create():
             'required': False,
             'default': None,
         },
-        'expected_status': {
-            'required': True,
-            'default': 200,
-        },
-        'expected_body': {
-            'required': False,
-            'default': None,
-        },
     }
 
     for param in params:
@@ -111,11 +110,9 @@ def execution():
         path = str(config_entry['path']) if 'path' in config_entry else None
         test_body = config_entry['test_body'] if 'test_body' in config_entry else None
         test_header = config_entry['test_header'] if 'test_header' in config_entry else None
-        expected_status = int(config_entry['expected_status']) if 'expected_status' in config_entry else None
-        expected_body = config_entry['expected_body'] if 'expected_body' in config_entry else None
 
         # Check if required parameters are set
-        if use_https is not None and method and hostname and port and path and expected_status:
+        if use_https is not None and method and hostname and port and path:
 
             protocol = 'http'
             if use_https:
@@ -132,24 +129,26 @@ def execution():
             execution_uuid = str(uuid.uuid4())
             execution_instance['uuid'] = execution_uuid
             execution_instance['target_url'] = target_url
-            execution_instance['expected_status'] = str(expected_status)
-            execution_instance['actual_status'] = str(response_status)
+            execution_instance['status'] = str(response_status)
 
-            if response_status == expected_status:
-                if expected_body:
-                    response_body = response.json()
-                    execution_instance['expected_body'] = str(expected_body)
-                    execution_instance['actual_body'] = str(response_body)
-                    if expected_body == response_body:
-                        execution_instance['success'] = True
-                    else:
-                        execution_instance['success'] = False
-                else:
-                    execution_instance['success'] = True
-            else:
-                execution_instance['success'] = False
+            # Response and config as zip
 
             persistence['execution'][execution_uuid] = execution_instance
+
+            execution_results_dir = os.path.join(storage_path, execution_uuid)
+            os.makedirs(execution_results_dir)
+
+            execution_json = os.path.join(execution_results_dir, 'execution.json')
+            received_response_json = os.path.join(execution_results_dir, 'response.json')
+            with open(execution_json, 'w') as exec_json:
+                exec_json.writelines(execution_instance)
+
+            with open(received_response_json, 'w') as response_json:
+                response_json.writelines(jsonify(response))
+
+            with tempfile.NamedTemporaryFile() as tf:
+                tmp_zip_file = shutil.make_archive(tf.name, 'zip', execution_results_dir)
+                shutil.copy2(tmp_zip_file, os.path.join(execution_results_dir, result_zip_file_name))
 
             # Test was executed with any possible outcome
             return jsonify(execution_instance), status.HTTP_200_OK
@@ -158,3 +157,18 @@ def execution():
             return "Required configuration parameters are missing.", jsonify(config_entry), status.HTTP_400_BAD_REQUEST
     else:
         return "No configuration with that ID found.", jsonify(persistence), status.HTTP_404_NOT_FOUND
+
+
+# Get load test results
+@plugin.route('/execution/<string:exec_uuid>/', methods=['GET'])
+def execution_results(exec_uuid):
+    try:
+        config_uuid = persistence.get('execution').get(exec_uuid).get('config').get('uuid')
+    except AttributeError:
+        return "No execution found with that ID.", status.HTTP_404_NOT_FOUND
+
+    results_zip_path = os.path.join(storage_path, config_uuid, exec_uuid, result_zip_file_name)
+    if os.path.isfile(results_zip_path):
+        return send_file(results_zip_path)
+    else:
+        return "No results available (yet).", status.HTTP_404_NOT_FOUND

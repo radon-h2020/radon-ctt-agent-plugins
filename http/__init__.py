@@ -90,9 +90,11 @@ def configuration_create():
                 config_instance[param] = value
 
         if is_required and param not in config_instance:
+            current_app.logger.error(f"Required parameter {param} not provided.")
             return f'Required parameter {param} not provided.', status.HTTP_400_BAD_REQUEST
 
     persistence['configuration'][configuration_uuid] = config_instance
+    current_app.logger.info(f"Config: {config_instance}")
     return jsonify(config_instance), status.HTTP_201_CREATED
 
 

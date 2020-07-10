@@ -204,7 +204,7 @@ def execution():
 
         persistence['execution'][execution_uuid] = execution_instance
 
-        return jsonify(execution_instance), status.HTTP_200_OK
+        return jsonify(execution_instance), status.HTTP_201_CREATED
 
     else:
         return "No configuration with that ID found.", jsonify(persistence), status.HTTP_404_NOT_FOUND

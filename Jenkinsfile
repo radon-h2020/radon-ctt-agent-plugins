@@ -19,6 +19,7 @@ pipeline {
 
   stages {
     stage('Pull Docker Agent Base Image') {
+      agent any
       steps {
         sh "docker pull ${DOCKER_FQN}:base"
       }

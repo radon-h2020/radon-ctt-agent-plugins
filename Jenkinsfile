@@ -23,9 +23,14 @@ pipeline {
     stage('Build Docker Agent Plugin Images') {
       parallel {
         stage('JMeter') {
+          environment {
+            dockerTag = 'jmeter'
+          }
+          when { 
+            fileExists dockerTag
+          }
           steps {
             script {
-              dockerTag = 'jmeter'
               dir dockerTag
               dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
               withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
@@ -33,10 +38,13 @@ pipeline {
               }
             }
           }
-        } when { fileExists 'jmeter' }
+        }
 
         stage('HTTP') {
           steps {
+            when { 
+              fileExists 'http' 
+            }
             script {
               dockerTag = 'http'
               dir dockerTag
@@ -46,46 +54,7 @@ pipeline {
               }
             }
           }
-        } when { fileExists 'http' }
-
-        stage('Ping') {
-          steps {
-            script {
-              dockerTag = 'ping'
-              dir dockerTag
-              dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
-              withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                dockerImage.push(dockerTag)
-              }
-            }
-          }
-        } when { fileExists 'ping' }
-
-        stage('ApacheBench') {
-          steps {
-            script {
-              dockerTag = 'apachebench'
-              dir dockerTag
-              dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
-              withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                dockerImage.push(dockerTag)
-              }
-            }
-          }
-        } when { fileExists 'apachebench' }
-
-        stage('Locust') {
-          steps {
-            script {
-              dockerTag = 'locust'
-              dir dockerTag
-              dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
-              withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                dockerImage.push(dockerTag)
-              }
-            }
-          }
-        } when { fileExists 'locust' }
+        } 
       }
     }
   }

@@ -26,9 +26,6 @@ pipeline {
           environment {
             dockerTag = 'jmeter'
           }
-          when { 
-            fileExists dockerTag
-          }
           steps {
             script {
               dir dockerTag
@@ -41,12 +38,11 @@ pipeline {
         }
 
         stage('HTTP') {
+          environment {
+            dockerTag = 'http'
+          }
           steps {
-            when { 
-              fileExists 'http' 
-            }
             script {
-              dockerTag = 'http'
               dir dockerTag
               dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
               withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {

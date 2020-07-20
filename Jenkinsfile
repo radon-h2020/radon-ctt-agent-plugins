@@ -20,7 +20,7 @@ pipeline {
           }
           steps {
             script {
-              dir dockerTag {
+              dir (dockerTag) {
                 dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
                 withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
                   dockerImage.push(dockerTag)

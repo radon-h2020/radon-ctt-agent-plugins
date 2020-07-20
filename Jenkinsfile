@@ -20,10 +20,11 @@ pipeline {
           }
           steps {
             script {
-              dir dockerTag
-              dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
-              withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                dockerImage.push(dockerTag)
+              dir dockerTag {
+                dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
+                withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
+                  dockerImage.push(dockerTag)
+                }
               }
             }
           }
@@ -35,10 +36,11 @@ pipeline {
           }
           steps {
             script {
-              dir dockerTag
-              dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
-              withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                dockerImage.push(dockerTag)
+              dir dockerTag {
+                dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
+                withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
+                  dockerImage.push(dockerTag)
+                }
               }
             }
           }

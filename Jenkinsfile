@@ -13,38 +13,28 @@ pipeline {
 
   stages {
     stage('Build Docker Agent Plugin Images') {
-      parallel {
-        stage('JMeter') {
-          environment {
-            dockerTag = 'jmeter'
+      matrix {
+        agent any
+        axes {
+          axis {
+            name 'AGENT_PLUGIN'
+            values 'jmeter', 'http', 'ping'
           }
+        }
+      } 
+      stages {
+        stage('Build and Push Docker Agent Images') { 
           steps {
             script {
-              dir(dockerTag) {
-                dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
+              dir(AGENT_PLUGIN) {
+                dockerImage = docker.build("radonconsortium/radon-ctt-agent:${AGENT_PLUGIN}")
                 withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                  dockerImage.push(dockerTag)
+                  dockerImage.push(AGENT_PLUGIN)
                 }
               }
             }
           }
         }
-
-        stage('HTTP') {
-          environment {
-            dockerTag = 'http'
-          }
-          steps {
-            script {
-              dir(dockerTag) {
-                dockerImage = docker.build("radonconsortium/radon-ctt-agent:${dockerTag}")
-                withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                  dockerImage.push(dockerTag)
-                }
-              }
-            }
-          }
-        } 
       }
     }
   }

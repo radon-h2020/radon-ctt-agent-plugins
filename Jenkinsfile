@@ -12,14 +12,6 @@ pipeline {
   }
 
   stages {
-    stage('Pull base image') {
-      steps {
-        script {
-          dockerImage = docker.pull("radonconsortium/radon-ctt-agent:base")
-        }
-      }
-    }
-
     stage('Build Docker Agent Plugin Images') {
       parallel {
         stage('JMeter') {

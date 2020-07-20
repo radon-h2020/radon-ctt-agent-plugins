@@ -21,15 +21,15 @@ pipeline {
             values 'jmeter', 'http', 'ping'
           }
         }
-      } 
-      stages {
-        stage('Build and Push Docker Agent Images') { 
-          steps {
-            script {
-              dir(AGENT_PLUGIN) {
-                dockerImage = docker.build("radonconsortium/radon-ctt-agent:${AGENT_PLUGIN}")
-                withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                  dockerImage.push(AGENT_PLUGIN)
+        stages {
+          stage('Build and Push Docker Agent Images') { 
+            steps {
+              script {
+                dir(AGENT_PLUGIN) {
+                  dockerImage = docker.build("radonconsortium/radon-ctt-agent:${AGENT_PLUGIN}")
+                  withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
+                    dockerImage.push(AGENT_PLUGIN)
+                  }
                 }
               }
             }

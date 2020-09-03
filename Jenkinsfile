@@ -31,13 +31,13 @@ pipeline {
         axes {
           axis {
             name 'AGENT_PLUGIN'
-            values 'jmeter', 'http', 'ping'
+            values 'http', 'jmeter', 'ping'
           }
         }
         stages {
           stage('Build and Push Docker Agent Images') { 
             steps {
-              echo "Building ${AGENT_PLUGIN} plugin."
+              echo "Building '${AGENT_PLUGIN}' plugin."
               script {
                 dir("${AGENT_PLUGIN}") {
                   dockerImage = docker.build("${DOCKER_FQN}:${AGENT_PLUGIN}")

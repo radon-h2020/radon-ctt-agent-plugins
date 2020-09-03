@@ -37,6 +37,7 @@ pipeline {
         stages {
           stage('Build and Push Docker Agent Images') { 
             steps {
+              echo "Building ${AGENT_PLUGIN} plugin."
               script {
                 dir("${AGENT_PLUGIN}") {
                   dockerImage = docker.build("${DOCKER_FQN}:${AGENT_PLUGIN}")

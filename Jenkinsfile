@@ -28,21 +28,48 @@ pipeline {
     stage('Build Docker Agent Plugin Images') {
       matrix {
         agent any
-        axes {
-          axis {
-            name 'AGENT_PLUGIN'
-            values 'http', 'jmeter', 'ping'
-          }
-        }
+        # axes {
+        #   axis {
+        #     name 'AGENT_PLUGIN'
+        #     values 'http', 'jmeter', 'ping'
+        #   }
+        # }
         stages {
-          stage('Build and Push Docker Agent Images') { 
+          stage('Build and Push http Docker Agent Images') { 
             steps {
-              echo "Building '${AGENT_PLUGIN}' plugin."
+              echo "Building http plugin."
               script {
-                dir("${AGENT_PLUGIN}") {
-                  dockerImage = docker.build("${DOCKER_FQN}:${AGENT_PLUGIN}")
+                dir('http') {
+                  dockerImage = docker.build("${DOCKER_FQN}:http")
                   withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                    dockerImage.push("${AGENT_PLUGIN}")
+                    dockerImage.push("http")
+                  }
+                }
+              }
+            }
+          }
+          stage('Build and Push jmeter Docker Agent Images') { 
+            steps {
+              echo "Building jmeter plugin."
+              script {
+                dir('jmeter') {
+                  dockerImage = docker.build("${DOCKER_FQN}:jmeter")
+                  withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
+                    dockerImage.push("jmeter")
+                  }
+                }
+              }
+            }
+          }
+
+          stage('Build and Push ping Docker Agent Images') { 
+            steps {
+              echo "Building ping plugin."
+              script {
+                dir('ping') {
+                  dockerImage = docker.build("${DOCKER_FQN}:ping")
+                  withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
+                    dockerImage.push("ping")
                   }
                 }
               }

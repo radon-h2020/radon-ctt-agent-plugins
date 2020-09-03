@@ -28,12 +28,12 @@ pipeline {
     stage('Build Docker Agent Plugin Images') {
       matrix {
         agent any
-        # axes {
-        #   axis {
-        #     name 'AGENT_PLUGIN'
-        #     values 'http', 'jmeter', 'ping'
-        #   }
-        # }
+        // axes {
+        //  axis {
+        //    name 'AGENT_PLUGIN'
+        //    values 'http', 'jmeter', 'ping'
+        //   }
+        // }
         stages {
           stage('Build and Push http Docker Agent Images') { 
             steps {

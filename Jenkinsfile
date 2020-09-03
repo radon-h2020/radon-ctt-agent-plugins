@@ -41,7 +41,7 @@ pipeline {
                 dir("${AGENT_PLUGIN}") {
                   dockerImage = docker.build("${DOCKER_FQN}:${AGENT_PLUGIN}")
                   withDockerRegistry(credentialsId: 'dockerhub-radonconsortium') {
-                    dockerImage.push()
+                    dockerImage.push("${AGENT_PLUGIN}")
                   }
                 }
               }

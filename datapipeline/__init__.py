@@ -176,12 +176,6 @@ def execution():
 
         test_execution_cli_command = ["cp", resources_path+"/*", "/tmp/nifi_agent/"]
 
-        # Possible extensions
-        # * -r -R remote (server mode)
-        # * -H -P Proxy
-        # * many more ( jmeter -? )
-        # * Parameter string for -Dpropkey=propvalue
-
         if 'host' in config_entry:
             target_host = config_entry['host']
             current_app.logger.info(f'Setting host to {target_host}')

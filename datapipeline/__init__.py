@@ -128,7 +128,7 @@ result_execution_folder_name = 'execution'
 
 @plugin.route('/')
 def index():
-    return f'This is the Radon CTT Agent JMeter Plugin.', status.HTTP_200_OK
+    return f'This is the Radon CTT Agent Data Pipeline Plugin.', status.HTTP_200_OK
 
 ############# Data Ppeline Testing Plugin #############
 
@@ -279,7 +279,7 @@ def execution():
         nifiport = "8080"
         nifi_url = "http://"+nifihost+":" + nifiport+"/nifi-api"
 
-	#Data pipeline blocks inside the TI 
+        #Data pipeline blocks inside the TI
         processor_group_name = "S3Bucket_dest_PG_LocalConn"
         processor_name = "PutS3Object"
 
@@ -292,7 +292,7 @@ def execution():
         #stop the pipeline
         stopPipe(nifi_url, id)
 
-	# Copy files to input of the pipeline
+        # Copy files to input of the pipeline
         os.system(' '.join(test_execution_cli_command))
 
         #configure the pipeline
@@ -304,7 +304,7 @@ def execution():
         #start the pipeline
         startPipe(nifi_url, id)
 
-	#wait for the test duration
+        #wait for the test duration
         time.sleep(test_duration_sec)
 
         execution_end = datetime.datetime.now()

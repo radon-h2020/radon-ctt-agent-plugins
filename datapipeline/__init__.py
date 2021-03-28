@@ -198,9 +198,30 @@ def configuration_create():
         velocity_per_minute = request.form.get('velocity_per_minute', type=int)
         current_app.logger.info(f'\'velocity_per_minute\' set to: {velocity_per_minute}')
         config_instance['velocity_per_minute'] = velocity_per_minute
+
+
+    #performance_metric (form)
+    if 'performance_metric' in request.form:
+        performance_metric = request.form.get('performance_metric', type=str)
+        current_app.logger.info(f'\'performance_metric\' set to: {host}')
+        config_instance['performance_metric'] = performance_metric
+
+    # lower_bound (form)
+    if 'lower_bound' in request.form:
+        lower_bound = request.form.get('lower_bound', type=float)
+        current_app.logger.info(f'\'lower_bound\' set to: {host}')
+        config_instance['lower_bound'] = lower_bound
+
+    #  (form)
+    if 'lower_bound' in request.form:
+        lower_bound = request.form.get('lower_bound', type=float)
+        current_app.logger.info(f'\'lower_bound\' set to: {host}')
+        config_instance['lower_bound'] = lower_bound
+
+
+
     # resources (file)
     data_archive_path = None
-
 
     if 'resources' in request.files:
         # Get file from request

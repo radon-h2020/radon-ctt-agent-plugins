@@ -7,6 +7,7 @@ import shutil
 import tempfile
 import uuid
 import zipfile
+import requests
 
 
 # Module imports
@@ -33,6 +34,71 @@ plugin = Blueprint(name, __name__)
           test_id: "firstdptest"
         targets: [ ConsS3Bucket_1 ]
 """
+
+
+
+def getInfo(nifi_url):
+    target = nifi_url + "/resources"
+    response = requests.get(target)
+    return response.json()
+
+def getGroupInfo(nifi_url, id):
+    target = nifi_url + "/process-groups/"+id+"/processors"
+    response = requests.get(target)
+    return response.json()
+
+def configurePipeSchedulePeriod(nifi_url, id, name, seconds_between_gen):
+
+    group_info = getGroupInfo(nifi_url, id)
+    processor_info = get_processor_info(group_info,  name)
+    processor_id = processor_info['component']['id']
+    revision = processor_info['revision']
+
+    schedulingPeriod = str(seconds_between_gen) + " sec"
+
+    configuration = {
+        "revision": revision,
+        "component": {
+            "id": str(processor_id),
+            "config": {
+                "schedulingPeriod": schedulingPeriod
+            }
+        }
+    }
+
+    stop_uri = nifi_url + "/processors/" + processor_id
+
+    response = requests.put(stop_uri, json = configuration)
+    print(response.text)
+    return
+
+def startPipe(nifi_url, id):
+
+    stop_uri = nifi_url + "/flow/process-groups/" + id
+    response = requests.put(stop_uri, json={"id": id, 'state': "RUNNING"})
+    print(response.text)
+    return
+
+def stopPipe(nifi_url, id):
+
+    stop_uri = nifi_url + "/flow/process-groups/" + id
+    response = requests.put(stop_uri, json={"id": id, 'state': "STOPPED" })
+    print(response.text)
+
+    return
+
+def findGroupId(info, type, name):
+    for item in info['resources']:
+        itempath = item['identifier']
+        if(itempath.startswith(type) and item['name'] == name):
+            id = itempath.split('/')[-1]
+            return(id)
+
+def get_processor_info(info, name):
+    for item in info['processors']:
+        if(item['component']['name'] == name):
+            return item
+
 
 
 
@@ -207,10 +273,42 @@ def execution():
         execution_instance['cli_call'] = test_execution_cli_command + [">",os.path.join(execution_path,"out.log")]
         current_app.logger.info(f'CLI call: {str(test_execution_cli_command)}')
 
-        execution_start = datetime.datetime.now()
+
+        #access NiFi through docker host
+        nifihost = "172.17.0.1"
+        nifiport = "8080"
+        nifi_url = "http://"+nifihost+":" + nifiport+"/nifi-api"
+
+	#Data pipeline blocks inside the TI 
+        processor_group_name = "S3Bucket_dest_PG_LocalConn"
+        processor_name = "PutS3Object"
+
+        #Fetch  current information from API about running services
+        nifi_info = getInfo(nifi_url)
+
+        #Get processor group id by name
+        id = findGroupId(nifi_info, "/process-groups/", processor_group_name)
+
+        #stop the pipeline
+        stopPipe(nifi_url, id)
+
+	# Copy files to input of the pipeline
         os.system(' '.join(test_execution_cli_command))
+
+        #configure the pipeline
+        seconds_between_gen = round(60 / velocity_per_minute, 3)
+        configurePipeSchedulePeriod(nifi_url, id, processor_name, seconds_between_gen)
+
+        execution_start = datetime.datetime.now()
+
+        #start the pipeline
+        startPipe(nifi_url, id)
+
+	#wait for the test duration
         time.sleep(test_duration_sec)
+
         execution_end = datetime.datetime.now()
+
 
         execution_instance['execution_start'] = execution_start
         execution_instance['execution_end'] = execution_end

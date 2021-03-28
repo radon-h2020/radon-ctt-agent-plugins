@@ -100,6 +100,38 @@ def get_processor_info(info, name):
             return item
 
 
+def createController(nifi_url):
+    configuration = {
+        "revision": {
+            "version": 0
+        },
+        "component": {
+            "name": "PrometheusReportingTask",
+            "type": "org.apache.nifi.reporting.prometheus.PrometheusReportingTask",
+            "properties": {"prometheus-reporting-task-metrics-endpoint-port": "9093"}
+        }
+    }
+
+    stop_uri = nifi_url + "/controller/reporting-tasks"
+    response = requests.post(stop_uri, json=configuration)
+    return response.json()['id']
+
+def startController(nifi_url, task_id):
+    stop_uri = nifi_url + "/reporting-tasks/" + task_id + "/run-status"
+    body = { "revision": { "version": 1 },
+                'state': "RUNNING"
+            }
+    response = requests.put(stop_uri, json=body  )
+    return
+
+def controller_exists(info):
+    for item in info['resources']:
+        itempath = item['identifier']
+        if (itempath.startswith("/reporting-tasks") and item['name'] == "PrometheusReportingTask"):
+            return True
+    return False
+
+
 
 
 def register(app, plugin_storage_path=None):
@@ -285,6 +317,14 @@ def execution():
 
         #Fetch  current information from API about running services
         nifi_info = getInfo(nifi_url)
+
+        # Create Prometheus reporting task service if it does not already exist
+        # port 9093
+        # http://ec2-3-122-159-218.eu-central-1.compute.amazonaws.com:9093/metrics
+        if not controller_exists(nifi_info):
+           controller_id = createController(nifi_url)
+           startController(nifi_url, controller_id)
+
 
         #Get processor group id by name
         id = findGroupId(nifi_info, "/process-groups/", processor_group_name)

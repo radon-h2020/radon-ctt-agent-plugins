@@ -5,6 +5,7 @@ import os
 import shutil
 import tempfile
 import uuid
+import zipfile
 
 # Module imports
 from flask import Blueprint, current_app, jsonify, request, send_file
@@ -31,7 +32,7 @@ persistence = {
 }
 
 jmeter_executable = '/usr/bin/env jmeter'
-test_plan_filename = 'test_plan.jmx'
+resources_filename = 'resources.zip'
 test_properties_filename = "jmeter.properties"
 test_run_log_filename = 'run.log'
 test_results_dashboard_folder_name = 'dashboard'
@@ -81,16 +82,39 @@ def configuration_create():
         current_app.logger.info(f'\'port\' set to: {port}')
         config_instance['port'] = port
 
-    # Test plan (file)
-    test_plan_path = None
-    if 'test_plan' in request.files:
-        test_plan = request.files['test_plan']
-        test_plan_path = os.path.join(config_path, test_plan_filename)
-        test_plan.save(test_plan_path)
-        config_instance['test_plan_path'] = \
-            os.path.join(config_path_relative, test_plan_filename)
+    # Test resources (file) and JMX file name (form)
+    if 'resources' in request.files and 'jmx_file_name' in request.form:
+
+        # Get file from request
+        resources_file = request.files['resources']
+        resources_zip_path = os.path.join(config_path, resources_filename)
+        resources_file.save(resources_zip_path)
+
+        # Extract resources
+        resources_extract_dir = os.path.join(config_path, 'resources')
+        os.makedirs(resources_extract_dir)
+        with zipfile.ZipFile(resources_zip_path, 'r') as res_zip:
+            res_zip.extractall(resources_extract_dir)
+
+        # Get name of the JMX file from request
+        jmx_file_name = request.form.get('jmx_file_name')
+        current_app.logger.info(f'\'jmx_file_name\' set to: {jmx_file_name}')
+        config_instance['jmx_file_name'] = jmx_file_name
+
+        # Check if JMX file with the given name exists in extracted directory
+        # Test plan = JMX file inside the extracted resource zip with the name of 'jmx_file_name'
+        test_plan_path = os.path.join(config_path, 'resources', jmx_file_name)
+        if os.path.isfile(test_plan_path):
+            test_plan_path_relative = os.path.relpath(test_plan_path, storage_path)
+            config_instance['test_plan'] = test_plan_path_relative
+
+            current_app.logger.debug(f'\'test_plan\' full path is: {test_plan_path}')
+            current_app.logger.info(f'\'test_plan\' set to: {test_plan_path_relative}')
+        else:
+            current_app.logger.error(f'\'test_plan\' could not be found in {test_plan_path}.')
+            raise FileNotFoundError(f'\'test_plan\' could not be found in {test_plan_path}.')
     else:
-        return 'No test plan provided.', status.HTTP_400_BAD_REQUEST
+        return 'No test resources and/or JMX file name provided.', status.HTTP_400_BAD_REQUEST
 
     # Properties file
     if 'properties' in request.files:
@@ -177,9 +201,10 @@ def execution():
             current_app.logger.info(f'Setting port to {jmeter_target_port}')
             jmeter_cli_call.append('-JPORT=' + jmeter_target_port)
 
-        if 'test_plan_path' in config_entry:
+        if 'test_plan' in config_entry:
             os.mkdir(execution_path)
-            jmeter_cli_call.append('-t ' + os.path.join(storage_path, config_entry['test_plan_path']))
+
+            jmeter_cli_call.append('-t ' + os.path.join(storage_path, config_entry['test_plan']))
 
             if 'properties_path' in config_entry:
                 jmeter_cli_call.append('-p ' + os.path.join(config_entry['properties_path']))

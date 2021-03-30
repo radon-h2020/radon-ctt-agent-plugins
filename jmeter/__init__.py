@@ -114,7 +114,15 @@ def configuration_create():
             current_app.logger.error(f'\'test_plan\' could not be found in {test_plan_path}.')
             raise FileNotFoundError(f'\'test_plan\' could not be found in {test_plan_path}.')
     else:
-        return 'No test resources and/or JMX file name provided.', status.HTTP_400_BAD_REQUEST
+        if 'resources' not in request.files:
+            error_str = f'\'resources\' could not be found in \'request.files\''
+        elif 'jmx_file_name' not in request.form:
+            error_str = f'\'jmx_file_name\' could not be found in \'request.form\''
+        else:
+            error_str = f'No test resources and/or JMX file name provided.', status.HTTP_400_BAD_REQUEST
+
+        current_app.logger.error(error_str)
+        raise FileNotFoundError(error_str)
 
     # Properties file
     if 'properties' in request.files:

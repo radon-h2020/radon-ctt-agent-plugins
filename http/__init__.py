@@ -7,7 +7,6 @@ import tempfile
 import uuid
 
 from flask import Blueprint, current_app, jsonify, request, send_file
-from flask_api import status
 
 
 name = 'HTTP'
@@ -35,7 +34,7 @@ result_zip_file_name = 'results.zip'
 
 @plugin.route('/')
 def index():
-    return f'This is the Radon CTT Agent HTTP Plugin.', status.HTTP_200_OK
+    return f'This is the Radon CTT Agent HTTP Plugin.', 200
 
 
 @plugin.route('/configuration/', methods=['POST'])
@@ -91,11 +90,11 @@ def configuration_create():
 
         if is_required and param not in config_instance:
             current_app.logger.error(f"Required parameter {param} not provided.")
-            return f'Required parameter {param} not provided.', status.HTTP_400_BAD_REQUEST
+            return f'Required parameter {param} not provided.', 400
 
     persistence['configuration'][configuration_uuid] = config_instance
     current_app.logger.info(f"Config: {config_instance}")
-    return jsonify(config_instance), status.HTTP_201_CREATED
+    return jsonify(config_instance), 201
 
 
 @plugin.route('/execution/', methods=['POST'])
@@ -154,12 +153,12 @@ def execution():
                 shutil.copy2(tmp_zip_file, os.path.join(execution_results_dir, result_zip_file_name))
 
             # Test was executed with any possible outcome
-            return jsonify(execution_instance), status.HTTP_200_OK
+            return jsonify(execution_instance), 200
 
         else:
-            return "Required configuration parameters are missing.", jsonify(config_entry), status.HTTP_400_BAD_REQUEST
+            return "Required configuration parameters are missing.", jsonify(config_entry), 400
     else:
-        return "No configuration with that ID found.", jsonify(persistence), status.HTTP_404_NOT_FOUND
+        return "No configuration with that ID found.", jsonify(persistence), 404
 
 
 # Get execution results
@@ -168,10 +167,10 @@ def execution_results(exec_uuid):
     try:
         execution_uuid = persistence.get('execution').get(exec_uuid).get('uuid')
     except AttributeError:
-        return "No execution found with that ID.", status.HTTP_404_NOT_FOUND
+        return "No execution found with that ID.", 404
 
     results_zip_path = os.path.join(storage_path, execution_uuid, result_zip_file_name)
     if os.path.isfile(results_zip_path):
         return send_file(results_zip_path)
     else:
-        return "No results available (yet).", status.HTTP_404_NOT_FOUND
+        return "No results available (yet).", 404

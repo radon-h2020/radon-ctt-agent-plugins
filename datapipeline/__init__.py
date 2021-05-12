@@ -12,7 +12,6 @@ import requests
 
 # Module imports
 from flask import Blueprint, current_app, jsonify, request, send_file
-from flask_api import status
 
 name = 'DataPipeline'
 prefix = 'datapipeline'
@@ -160,7 +159,7 @@ result_execution_folder_name = 'execution'
 
 @plugin.route('/')
 def index():
-    return f'This is the Radon CTT Agent Data Pipeline Plugin.', status.HTTP_200_OK
+    return f'This is the Radon CTT Agent Data Pipeline Plugin.', 200
 
 ############# Data Ppeline Testing Plugin #############
 
@@ -237,7 +236,7 @@ def configuration_create():
             res_zip.extractall(resources_extract_dir)
 
     else:
-        return 'No resources archive location provided.', status.HTTP_400_BAD_REQUEST
+        return 'No resources archive location provided.', 400
 
 
     persistence['configuration'][configuration_uuid] = config_instance
@@ -249,7 +248,7 @@ def configuration_create():
         }
     }
 
-    return jsonify(return_json), status.HTTP_201_CREATED
+    return jsonify(return_json), 201
 
 
 # Get/Delete Configuration
@@ -263,15 +262,15 @@ def configuration_get_delete(config_uuid):
                     'entry': persistence['configuration'][config_uuid]
                 }
             }
-            return jsonify(return_json), status.HTTP_200_OK
+            return jsonify(return_json), 200
 
         if request.method == 'DELETE':
             del persistence['configuration'][config_uuid]
             shutil.rmtree(os.path.join(storage_path, config_uuid))
-            return 'Successfully deleted ' + config_uuid + '.', status.HTTP_200_OK
+            return 'Successfully deleted ' + config_uuid + '.', 200
 
     else:
-        return "No configuration with that ID found", status.HTTP_404_NOT_FOUND
+        return "No configuration with that ID found", 404
 
 
 # Run load test (param: configuration uuid)
@@ -299,25 +298,25 @@ def execution():
             target_host = config_entry['host']
             current_app.logger.info(f'Setting host to {target_host}')
         else:
-            return "Configuration does not contain a host value.", status.HTTP_404_NOT_FOUND
+            return "Configuration does not contain a host value.", 404
 
         if 'test_duration_sec' in config_entry:
             test_duration_sec = config_entry['test_duration_sec']
             current_app.logger.info(f'Setting test_duration_sec to {test_duration_sec}')
         else:
-            return "Configuration does not contain a test_duration_sec value.", status.HTTP_404_NOT_FOUND
+            return "Configuration does not contain a test_duration_sec value.", 404
 
         if 'velocity_per_minute' in config_entry:
             velocity_per_minute = config_entry['velocity_per_minute']
             current_app.logger.info(f'Setting velocity_per_minute to {velocity_per_minute}')
         else:
-            return "Configuration does not contain a test_duration_sec value.", status.HTTP_404_NOT_FOUND
+            return "Configuration does not contain a test_duration_sec value.", 404
 
         if 'host' in config_entry:
             target_host = config_entry['host']
             current_app.logger.info(f'Setting host to {target_host}')
         else:
-            return "Configuration does not contain a host value.", status.HTTP_404_NOT_FOUND
+            return "Configuration does not contain a host value.", 404
 
 
         os.mkdir(execution_path)
@@ -380,10 +379,10 @@ def execution():
 
         persistence['execution'][execution_uuid] = execution_instance
 
-        return jsonify(execution_instance), status.HTTP_201_CREATED
+        return jsonify(execution_instance), 201
 
     else:
-        return "No configuration with that ID found.", jsonify(persistence), status.HTTP_404_NOT_FOUND
+        return "No configuration with that ID found.", jsonify(persistence), 404
 
 
 # Get load test results
@@ -392,11 +391,11 @@ def execution_results(exec_uuid):
     try:
         config_uuid = persistence.get('execution').get(exec_uuid).get('config').get('uuid')
     except AttributeError:
-        return "No execution found with that ID.", status.HTTP_404_NOT_FOUND
+        return "No execution found with that ID.", 404
 
     results_zip_path = os.path.join(storage_path, config_uuid, exec_uuid, result_zip_file_name)
     if os.path.isfile(results_zip_path):
         return send_file(results_zip_path)
     else:
-        return "No results available (yet).", status.HTTP_404_NOT_FOUND
+        return "No results available (yet).", 404
 

@@ -9,6 +9,7 @@ import zipfile
 
 # Module imports
 from flask import Blueprint, current_app, jsonify, request, send_file
+from urllib.parse import urlparse
 
 name = 'JMeter'
 prefix = 'jmeter'
@@ -72,8 +73,19 @@ def configuration_create():
     # Host (form)
     if 'host' in request.form:
         host = request.form.get('host', type=str)
-        current_app.logger.info(f'\'host\' set to: {host}')
-        config_instance['host'] = host
+        current_app.logger.info(f'Received \'host\': {host}')
+        parsed_url = urlparse(host)
+        if parsed_url:
+            config_instance['host'] = parsed_url.hostname
+            if parsed_url.path:
+                config_instance['url_path'] = parsed_url.path
+            else:
+                config_instance['url_path'] = '/'
+
+            current_app.logger.info(f'\'host\' value set to: {parsed_url.hostname}')
+            current_app.logger.info(f'\'url_path\' value set to: {parsed_url.path}')
+        else:
+            current_app.logger.info(f'Failed parsing \'host\' input (\'{host}\').')
 
     # Port (form)
     if 'port' in request.form:
@@ -202,6 +214,11 @@ def execution():
             jmeter_target_host = config_entry['host']
             current_app.logger.info(f'Setting host to {jmeter_target_host}')
             jmeter_cli_call.append('-JHOST=' + jmeter_target_host)
+
+        if 'url_path' in config_entry:
+            jmeter_target_path = config_entry['url_path']
+            current_app.logger.info(f'Setting url_path to {jmeter_target_path}')
+            jmeter_cli_call.append('-JPATH=' + jmeter_target_path)
 
         if 'port' in config_entry:
             jmeter_target_port = config_entry['port']

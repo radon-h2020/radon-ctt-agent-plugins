@@ -77,13 +77,13 @@ def configuration_create():
         parsed_url = urlparse(host)
         if parsed_url:
             if bool(parsed_url.scheme):
-                config_instance['host'] = parsed_url.netloc
+                config_instance['host'] = parsed_url.hostname
                 if parsed_url.path:
                     config_instance['url_path'] = parsed_url.path
                 else:
                     config_instance['url_path'] = '/'
 
-                current_app.logger.info(f'\'host\' value set to: {parsed_url.netloc}')
+                current_app.logger.info(f'\'host\' value set to: {parsed_url.hostname}')
                 current_app.logger.info(f'\'url_path\' value set to: {parsed_url.path}')
             else:
                 current_app.logger.info(f'\'host\' parameter \'{host}\' is not a valid URL. Passing on value as is.')

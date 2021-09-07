@@ -76,14 +76,18 @@ def configuration_create():
         current_app.logger.info(f'Received \'host\': {host}')
         parsed_url = urlparse(host)
         if parsed_url:
-            config_instance['host'] = parsed_url.hostname
-            if parsed_url.path:
-                config_instance['url_path'] = parsed_url.path
-            else:
-                config_instance['url_path'] = '/'
+            if bool(parsed_url.scheme):
+                config_instance['host'] = parsed_url.netloc
+                if parsed_url.path:
+                    config_instance['url_path'] = parsed_url.path
+                else:
+                    config_instance['url_path'] = '/'
 
-            current_app.logger.info(f'\'host\' value set to: {parsed_url.hostname}')
-            current_app.logger.info(f'\'url_path\' value set to: {parsed_url.path}')
+                current_app.logger.info(f'\'host\' value set to: {parsed_url.netloc}')
+                current_app.logger.info(f'\'url_path\' value set to: {parsed_url.path}')
+            else:
+                current_app.logger.info(f'\'host\' parameter \'{host}\' is not a valid URL. Passing on value as is.')
+                config_instance['host'] = host
         else:
             current_app.logger.info(f'Failed parsing \'host\' input (\'{host}\').')
 
@@ -140,8 +144,7 @@ def configuration_create():
         properties = request.files['properties']
         properties_path = os.path.join(config_path, test_properties_filename)
         properties.save(properties_path)
-        config_instance['properties_path'] = \
-            os.path.join(config_path_relative, test_properties_filename)
+        config_instance['properties_path'] = properties_path
 
     persistence['configuration'][configuration_uuid] = config_instance
 
@@ -231,7 +234,9 @@ def execution():
             jmeter_cli_call.append('-t ' + os.path.join(storage_path, config_entry['test_plan']))
 
             if 'properties_path' in config_entry:
-                jmeter_cli_call.append('-p ' + os.path.join(config_entry['properties_path']))
+                properties_path = os.path.join(storage_path, config_entry['properties_path'])
+                current_app.logger.info(f'''Setting properties_path to {properties_path}''')
+                jmeter_cli_call.append('-p ' + properties_path)
 
         else:
             return "Configuration does not contain a test plan.", 404

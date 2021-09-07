@@ -86,10 +86,11 @@ def configuration_create():
                 current_app.logger.info(f'\'host\' value set to: {parsed_url.hostname}')
                 current_app.logger.info(f'\'url_path\' value set to: {parsed_url.path}')
             else:
-                current_app.logger.info(f'\'host\' parameter \'{host}\' is not a valid URL. Passing on value as is.')
+                current_app.logger.info(f'''\'host\' parameter \'{host}\' is not a valid URL.
+                Setting host value as provided.''')
                 config_instance['host'] = host
         else:
-            current_app.logger.info(f'Failed parsing \'host\' input (\'{host}\').')
+            current_app.logger.warning(f'Failed parsing \'host\' input (\'{host}\'). Not setting host value.')
 
     # Port (form)
     if 'port' in request.form:
@@ -154,7 +155,6 @@ def configuration_create():
             'entry': config_instance
         }
     }
-
     return jsonify(return_json), 201
 
 
@@ -213,7 +213,7 @@ def execution():
         # * many more ( jmeter -? )
         # * Parameter string for -Dpropkey=propvalue
 
-        if 'host' in config_entry:
+        if 'host' in config_entry and config_entry['host']:
             jmeter_target_host = config_entry['host']
             current_app.logger.info(f'Setting host to {jmeter_target_host}')
             jmeter_cli_call.append('-JHOST=' + jmeter_target_host)
